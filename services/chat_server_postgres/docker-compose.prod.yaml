@@ -1,0 +1,31 @@
+volumes:
+  chat-server_postgres_volume:
+
+services:
+  chat-server_pg:
+    image: postgres:14-alpine3.17
+    container_name: chat-server_pg
+    env_file:
+      - prod.env
+    ports:
+      - "54322:5432"
+    volumes:
+      - chat-server_postgres_volume:/var/lib/postgresql/data
+    networks:
+      - chat_server
+
+  chat-server_migrator:
+    container_name: chat-server_migrator
+    image: $(MIGRATOR_IMAGE)
+    build:
+      context: .
+      dockerfile: migrator/migrator-prod.Dockerfile
+    env_file:
+      - prod.env
+    restart: on-failure
+    networks:
+      - chat_server
+
+networks:
+  chat_server:
+    external: true
