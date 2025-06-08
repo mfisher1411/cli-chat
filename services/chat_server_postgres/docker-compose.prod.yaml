@@ -16,7 +16,7 @@ services:
 
   chat-server_migrator:
     container_name: chat-server_migrator
-    image: $(MIGRATOR_IMAGE)
+    image: ${MIGRATOR_IMAGE}
     build:
       context: .
       dockerfile: migrator/migrator-prod.Dockerfile
