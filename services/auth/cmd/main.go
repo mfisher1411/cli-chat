@@ -57,7 +57,7 @@ func (s *server) Get(ctx context.Context, req *userAPI.GetRequest) (*userAPI.Get
 
 	var id int
 	var name, email string
-	var role int
+	var role int32
 	var createdAt time.Time
 	var updatedAt sql.NullTime
 
