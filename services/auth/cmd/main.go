@@ -32,6 +32,7 @@ type server struct {
 	pool *pgxpool.Pool
 }
 
+// NullTimeToTimestamp converts a sql.NullTime into a *timestamppb.Timestamp.
 func NullTimeToTimestamp(t sql.NullTime) *timestamppb.Timestamp {
 	if t.Valid {
 		return timestamppb.New(t.Time)
@@ -57,7 +58,7 @@ func (s *server) Get(ctx context.Context, req *userAPI.GetRequest) (*userAPI.Get
 
 	var id int
 	var name, email string
-	var role int
+	var role int32
 	var createdAt time.Time
 	var updatedAt sql.NullTime
 
