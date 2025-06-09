@@ -1,0 +1,132 @@
+name: auth service
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/auth/**'
+    #  - 'libraries/db_client/*'
+    #  - 'libraries/cache_client/*'
+  pull_request:
+    paths:
+      - 'services/auth/**'
+    #  - 'libraries/db_client/*'
+    #  - 'libraries/cache_client/*'
+
+env:
+  SERVICE_PATH: ./services/auth
+  SERVICE_NAME: auth
+  DOCKER_REGISTRY_URL: cr.selcloud.ru/mfisher1411
+
+jobs:
+  build-and-test:
+    name: Build and Test service
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache-dependency-path: go.sum
+
+      - name: Build
+        run: go build -C $SERVICE_PATH/cmd -o ../bin/
+
+      - name: Test
+        run: go test -C $SERVICE_PATH/cmd/ ../...
+
+  linter:
+    name: Lint service
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.59
+          working-directory: ${{ env.SERVICE_PATH }}
+          args: --timeout=30m --config=../../.golangci.pipeline.yaml
+          skip-cache: true
+
+  image-build-and-push:
+    name: Build and push image
+    runs-on: ubuntu-22.04
+    needs:
+      - build-and-test
+      - linter
+    outputs:
+      docker-image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate env file
+        run: |
+          touch ${{ env.SERVICE_PATH }}/prod.env
+          echo "${{ secrets.AUTH_ENV_FILE }}" > ${{ env.SERVICE_PATH }}/prod.env
+
+      - name: Setup Docker Tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            ${{env.DOCKER_REGISTRY_URL}}/${{env.SERVICE_NAME}}
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{env.DOCKER_REGISTRY_URL}}
+          username: ${{secrets.DOCKER_REGISTRY_USERNAME}}
+          password: ${{secrets.DOCKER_REGISTRY_PASSWORD}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: ${{ github.event_name != 'pull_request'}}
+          tags: ${{ steps.meta.outputs.tags }}
+          file: ${{ env.SERVICE_PATH }}/prod.Dockerfile
+          context: .
+          no-cache: true
+          provenance: false  # With this setting tags appear in registry!
+
+  deploy:
+    name: Deploy service
+    runs-on: ubuntu-22.04
+    if: ${{ github.event_name != 'pull_request'}}
+    needs:
+      - image-build-and-push
+    steps:
+      - name: Deploy to Selectel Cloud
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "${{ secrets.AUTH_ENV_FILE}}" > ~/prod.env
+            # Login into Selectel Registry
+            docker login -u ${{secrets.DOCKER_REGISTRY_USERNAME}} -p ${{secrets.DOCKER_REGISTRY_PASSWORD}} ${{env.DOCKER_REGISTRY_URL}}
+            
+            # Stop running container
+            docker stop ${{env.SERVICE_NAME}}
+            
+            # Remove old container
+            docker rm  ${{env.SERVICE_NAME}}
+            
+            # Run a new container from a new image
+            docker run -d \
+            --env.file ~/prod.env \
+            -p 50050:50051 --network ${{env.SERVICE_NAME}} --name ${{env.SERVICE_NAME}} -t ${{needs.image-build-and-push.outputs.docker-image}}
