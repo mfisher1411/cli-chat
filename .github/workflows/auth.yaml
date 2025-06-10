@@ -14,7 +14,7 @@ on:
     #  - 'libraries/cache_client/*'
 
 env:
-  SERVICE_PATH: ./services/auth
+  SERVICE_PATH: services/auth
   SERVICE_NAME: auth
   DOCKER_REGISTRY_URL: cr.selcloud.ru/mfisher1411
 
