@@ -32,6 +32,7 @@ type server struct {
 	pool *pgxpool.Pool
 }
 
+// NullTimeToTimestamp converts a sql.NullTime into a *timestamppb.Timestamp.
 func NullTimeToTimestamp(t sql.NullTime) *timestamppb.Timestamp {
 	if t.Valid {
 		return timestamppb.New(t.Time)
