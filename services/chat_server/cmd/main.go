@@ -21,10 +21,10 @@ import (
 	chatAPI "github.com/mfisher1411/cli-chat/libraries/api/chat/v1"
 )
 
-const grpcPort = 50052
+const grpcPort = 50051
 
 const (
-	dbDSN = "host=localhost port=54322 dbname=chat user=chat-user password=chat-password sslmode=disable"
+	dbDSN = "host=chat-server_pg port=5432 dbname=chat user=chat-user password=chat-password sslmode=disable"
 )
 
 type server struct {

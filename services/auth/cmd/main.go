@@ -21,10 +21,10 @@ import (
 	userAPI "github.com/mfisher1411/cli-chat/libraries/api/user/v1"
 )
 
-const grpcPort = 50051
+const grpcPort = 50050
 
 const (
-	dbDSN = "host=localhost port=54321 dbname=auth user=auth-user password=auth-password sslmode=disable"
+	dbDSN = "host=auth_pg port=5432 dbname=auth user=auth-user password=auth-password sslmode=disable"
 )
 
 type server struct {
