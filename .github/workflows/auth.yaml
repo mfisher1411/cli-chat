@@ -128,7 +128,6 @@ jobs:
             
             # Run a new container from a new image
             # Run a new container with prod.env
-
             docker run -d \
             --env-file ~/prod.env \
             -p 50050:50051 --network ${{env.SERVICE_NAME}} --name ${{env.SERVICE_NAME}} -t ${{needs.image-build-and-push.outputs.docker-image}}
