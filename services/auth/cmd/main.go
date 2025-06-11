@@ -21,7 +21,7 @@ import (
 	userAPI "github.com/mfisher1411/cli-chat/libraries/api/user/v1"
 )
 
-const grpcPort = 50050
+const grpcPort = 50051
 
 const (
 	dbDSN = "host=auth_pg port=5432 dbname=auth user=auth-user password=auth-password sslmode=disable"
